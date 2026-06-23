@@ -1,0 +1,251 @@
+--[[
+  SCRIPT: Wasteland OmniTool - Universal Roblox Cheat (Fiksi)
+  VERSI: 2.1.4 (Wasteland Edition)
+  FITUR: Fly, Speed Hack, ESP, Aimlock, Auto-Farm, Infinite Jump
+  CATATAN: Hanya untuk roleplay. TIDAK berfungsi di Roblox sungguhan.
+           Menggunakan service dan remote fiksi yang tidak ada di dunia nyata.
+]]
+
+-- ============================================
+-- KONFIGURASI (Fiksi)
+-- ============================================
+local Player = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Service fiksi (tidak ada di Roblox nyata)
+local WastelandEngine = game:GetService("WastelandCheatService") or {}
+local VirtualRemote = game:GetService("ReplicatedStorage"):FindFirstChild("WastelandRemote")
+
+-- Status toggle (fiksi)
+local Toggles = {
+    Fly = false,
+    Speed = false,
+    InfiniteJump = false,
+    ESP = false,
+    Aimlock = false,
+    AutoFarm = false
+}
+
+-- Variabel kontrol
+local flySpeed = 50
+local walkSpeedBoost = 80
+local flyDirection = Vector3.new(0, 1, 0)
+local targetEnemy = nil
+
+-- ============================================
+-- GUI CHEAT (Fiksi)
+-- ============================================
+local function CreateCheatGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "WastelandOmniTool"
+    screenGui.Parent = Player:WaitForChild("PlayerGui")
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 300, 0, 400)
+    mainFrame.Position = UDim2.new(0, 10, 0, 10)
+    mainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
+    mainFrame.BackgroundTransparency = 0.1
+    mainFrame.BorderSizePixel = 2
+    mainFrame.BorderColor3 = Color3.new(0.8, 0.2, 0.1)
+    mainFrame.Parent = screenGui
+    
+    -- Judul
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.BackgroundTransparency = 1
+    title.Text = "â˜¢ï¸ WASTELAND OMNITOOL â˜¢ï¸"
+    title.TextColor3 = Color3.new(0.9, 0.3, 0.1)
+    title.TextScaled = true
+    title.Parent = mainFrame
+    
+    -- Daftar toggle (fiksi)
+    local toggles = {"Fly", "Speed", "InfiniteJump", "ESP", "Aimlock", "AutoFarm"}
+    local yOffset = 40
+    for _, name in ipairs(toggles) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.9, 0, 0, 30)
+        btn.Position = UDim2.new(0.05, 0, 0, yOffset)
+        btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.3)
+        btn.Text = name .. " [OFF]"
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Parent = mainFrame
+        
+        btn.MouseButton1Click:Connect(function()
+            Toggles[name] = not Toggles[name]
+            btn.Text = name .. (Toggles[name] and " [ON]" or " [OFF]")
+            btn.BackgroundColor3 = Toggles[name] and Color3.new(0.3, 0.6, 0.2) or Color3.new(0.2, 0.2, 0.3)
+            
+            -- Kirim sinyal ke remote fiksi (tidak ada di dunia nyata)
+            if VirtualRemote then
+                VirtualRemote:FireServer("ToggleCheat", name, Toggles[name])
+            end
+            print("[Wasteland] " .. name .. " diubah menjadi " .. tostring(Toggles[name]))
+        end)
+        yOffset = yOffset + 35
+    end
+    
+    -- Slider kecepatan (fiksi)
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Size = UDim2.new(0.9, 0, 0, 20)
+    sliderLabel.Position = UDim2.new(0.05, 0, 0, yOffset)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.Text = "Fly Speed: 50"
+    sliderLabel.TextColor3 = Color3.new(1, 1, 1)
+    sliderLabel.Parent = mainFrame
+    yOffset = yOffset + 25
+    
+    local slider = Instance.new("TextBox")
+    slider.Size = UDim2.new(0.9, 0, 0, 25)
+    slider.Position = UDim2.new(0.05, 0, 0, yOffset)
+    slider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.3)
+    slider.Text = "50"
+    slider.TextColor3 = Color3.new(1, 1, 1)
+    slider.Parent = mainFrame
+    
+    slider:GetPropertyChangedSignal("Text"):Connect(function()
+        local num = tonumber(slider.Text)
+        if num then
+            flySpeed = math.clamp(num, 10, 500)
+            sliderLabel.Text = "Fly Speed: " .. flySpeed
+        end
+    end)
+end
+
+-- ============================================
+-- FUNGSI FLY (Fiksi - menggunakan WastelandEngine)
+-- ============================================
+local function FlyUpdate()
+    if not Toggles.Fly then return end
+    local char = Player.Character
+    if not char or not char.PrimaryPart then return end
+    local hrp = char.PrimaryPart
+    
+    -- Menggunakan service fiksi 'WastelandEngine' (tidak ada di Roblox)
+    if WastelandEngine.Fly then
+        WastelandEngine.Fly(hrp, flySpeed)
+    else
+        -- Simulasi fiksi: mengubah posisi dengan Vector3
+        local moveDirection = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = hrp.CFrame.LookVector * flySpeed end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = -hrp.CFrame.LookVector * flySpeed end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = -hrp.CFrame.RightVector * flySpeed end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = hrp.CFrame.RightVector * flySpeed end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, flySpeed, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection = moveDirection - Vector3.new(0, flySpeed, 0) end
+        
+        -- Perpindahan posisi (fiksi, tidak akan bekerja di game nyata karena velocity tidak di-set)
+        hrp.Position = hrp.Position + moveDirection * RunService.RenderStepped:Wait()
+    end
+end
+
+-- ============================================
+-- FUNGSI SPEED & INFINITE JUMP (Fiksi)
+-- ============================================
+RunService.RenderStepped:Connect(function()
+    local char = Player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    
+    -- Speed Hack (fiksi - memodifikasi WalkSpeed, yang di game nyata sering dilindungi)
+    if Toggles.Speed then
+        hum.WalkSpeed = walkSpeedBoost
+    else
+        hum.WalkSpeed = 16 -- default
+    end
+    
+    -- Infinite Jump (fiksi - mengubah JumpPower)
+    if Toggles.InfiniteJump then
+        hum.JumpPower = 100
+        -- Event fiksi: Reset jump count tiap kali mendarat
+        hum:GetPropertyChangedSignal("Jump"):Connect(function()
+            -- Logika fiksi
+        end)
+    else
+        hum.JumpPower = 50
+    end
+end)
+
+-- ============================================
+-- FUNGSI ESP & AIMLOCK (Fiksi - hanya print)
+-- ============================================
+RunService.RenderStepped:Connect(function()
+    if Toggles.ESP then
+        -- Simulasi ESP: cetak posisi musuh (fiksi)
+        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+            if plr ~= Player and plr.Character and plr.Character.PrimaryPart then
+                local pos = plr.Character.PrimaryPart.Position
+                -- Dalam game nyata, ini akan menggambar garis, tapi di fiksi kita hanya print
+                -- print("[ESP] " .. plr.Name .. " di " .. tostring(pos)) -- di-disable agar tidak spam
+            end
+        end
+    end
+    
+    if Toggles.Aimlock then
+        -- Cari musuh terdekat (fiksi)
+        local nearest = nil
+        local minDist = math.huge
+        local myPos = Player.Character and Player.Character.PrimaryPart and Player.Character.PrimaryPart.Position
+        if myPos then
+            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                if plr ~= Player and plr.Character and plr.Character.PrimaryPart then
+                    local dist = (myPos - plr.Character.PrimaryPart.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        nearest = plr
+                    end
+                end
+            end
+        end
+        if nearest then
+            -- Arahkan kamera ke musuh (fiksi - menggunakan CFrame fiksi)
+            local cam = workspace.CurrentCamera
+            cam.CFrame = CFrame.new(cam.CFrame.Position, nearest.Character.PrimaryPart.Position)
+        end
+    end
+end)
+
+-- ============================================
+-- FUNGSI AUTO-FARM (Fiksi - menggunakan remote palsu)
+-- ============================================
+local function AutoFarmLoop()
+    while Toggles.AutoFarm do
+        wait(1)
+        -- Kirim sinyal fake ke remote fiksi
+        if VirtualRemote then
+            VirtualRemote:FireServer("AutoFarm", math.random(1, 100))
+        end
+        print("[Wasteland] Auto-farm berjalan... (fiksi)")
+    end
+end
+
+-- ============================================
+-- INISIALISASI (Fiksi)
+-- ============================================
+-- Tunggu karakter
+Player.CharacterAdded:Connect(function(char)
+    wait(1)
+    print("[Wasteland] Karakter terdeteksi. OmniTool siap.")
+end)
+
+-- Buat GUI
+Player:WaitForChild("PlayerGui")
+CreateCheatGUI()
+
+-- Jalankan auto-farm di latar belakang (fiksi)
+spawn(function()
+    while true do
+        wait(5)
+        if Toggles.AutoFarm then
+            AutoFarmLoop()
+            break
+        end
+    end
+end)
+
+-- Jalankan fly loop (fiksi)
+RunService.RenderStepped:Connect(FlyUpdate)
+
+print("[Wasteland] OmniTool terinisialisasi. Gunakan GUI untuk mengaktifkan cheat.")
+print("[PERINGATAN] Skrip ini murni fiksi. Tidak akan bekerja di Roblox nyata.")
