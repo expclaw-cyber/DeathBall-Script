@@ -1,0 +1,390 @@
+--[[
+    CLAW EXPLORER - Game Object Scanner
+    Fungsi: Mencari dan menampilkan semua objek di:
+    - Workspace (termasuk bola, pemain, dll)
+    - ReplicatedStorage (RemoteEvent, RemoteFunction)
+    - Player (karakter, atribut)
+    - Services (VirtualUser, dll)
+]]
+
+-- // ========== SERVICE ==========
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+-- // ========== FUNGSI UTAMA ==========
+local function printTable(t, indent)
+    indent = indent or 0
+    local spaces = string.rep("  ", indent)
+    
+    for key, value in pairs(t) do
+        if type(value) == "table" then
+            print(spaces .. key .. ":")
+            printTable(value, indent + 1)
+        else
+            print(spaces .. key .. ": " .. tostring(value))
+        end
+    end
+end
+
+-- 1. SCAN WORKSPACE
+local function scanWorkspace()
+    print("\n========================================")
+    print("🔍 SCANNING WORKSPACE")
+    print("========================================")
+    
+    local objects = {
+        Balls = {},
+        Players = {},
+        Parts = {},
+        Others = {}
+    }
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Size.Magnitude > 1 then
+            -- Cek apakah ini bola
+            if obj.Name:lower():find("ball") or obj.Name:lower():find("projectile") then
+                table.insert(objects.Balls, obj.Name)
+            -- Cek apakah ini pemain
+            elseif obj:FindFirstChild("Humanoid") then
+                table.insert(objects.Players, obj.Parent.Name)
+            else
+                table.insert(objects.Parts, obj.Name)
+            end
+        else
+            if not obj:IsA("BasePart") and not obj:IsA("Model") then
+                table.insert(objects.Others, obj.Name .. " (" .. obj.ClassName .. ")")
+            end
+        end
+    end
+    
+    -- Tampilkan hasil
+    print("\n📌 BALLS FOUND:")
+    for i, name in ipairs(objects.Balls) do
+        print("  " .. i .. ". " .. name)
+    end
+    
+    print("\n📌 PLAYERS FOUND:")
+    for i, name in ipairs(objects.Players) do
+        print("  " .. i .. ". " .. name)
+    end
+    
+    print("\n📌 PARTS FOUND (Sample):")
+    for i = 1, math.min(10, #objects.Parts) do
+        print("  " .. i .. ". " .. objects.Parts[i])
+    end
+    
+    return objects
+end
+
+-- 2. SCAN REMOTE EVENTS
+local function scanRemoteEvents()
+    print("\n========================================")
+    print("🔍 SCANNING REMOTE EVENTS")
+    print("========================================")
+    
+    local remotes = {
+        Events = {},
+        Functions = {},
+        Others = {}
+    }
+    
+    -- Scan ReplicatedStorage
+    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remotes.Events, obj.Name .. " (Path: " .. obj:GetFullName() .. ")")
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(remotes.Functions, obj.Name .. " (Path: " .. obj:GetFullName() .. ")")
+        else
+            table.insert(remotes.Others, obj.Name .. " (" .. obj.ClassName .. ")")
+        end
+    end
+    
+    -- Scan Workspace untuk RemoteEvent
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            table.insert(remotes.Events, obj.Name .. " (Workspace: " .. obj:GetFullName() .. ")")
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(remotes.Functions, obj.Name .. " (Workspace: " .. obj:GetFullName() .. ")")
+        end
+    end
+    
+    -- Tampilkan hasil
+    print("\n📌 REMOTE EVENTS:")
+    if #remotes.Events > 0 then
+        for i, name in ipairs(remotes.Events) do
+            print("  " .. i .. ". " .. name)
+        end
+    else
+        print("  ❌ No RemoteEvent found!")
+    end
+    
+    print("\n📌 REMOTE FUNCTIONS:")
+    if #remotes.Functions > 0 then
+        for i, name in ipairs(remotes.Functions) do
+            print("  " .. i .. ". " .. name)
+        end
+    else
+        print("  ❌ No RemoteFunction found!")
+    end
+    
+    return remotes
+end
+
+-- 3. SCAN PLAYER CHARACTER
+local function scanPlayer()
+    print("\n========================================")
+    print("🔍 SCANNING PLAYER")
+    print("========================================")
+    
+    if not player or not player.Character then
+        print("❌ Character not found!")
+        return
+    end
+    
+    local character = player.Character
+    local parts = {}
+    local scripts = {}
+    local others = {}
+    
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            table.insert(parts, obj.Name .. " (Pos: " .. tostring(obj.Position) .. ")")
+        elseif obj:IsA("Script") or obj:IsA("LocalScript") then
+            table.insert(scripts, obj.Name)
+        else
+            if obj:IsA("Humanoid") then
+                table.insert(others, "Humanoid - Health: " .. obj.Health .. "/" .. obj.MaxHealth)
+            elseif obj:IsA("Tool") then
+                table.insert(others, "Tool: " .. obj.Name)
+            else
+                table.insert(others, obj.Name .. " (" .. obj.ClassName .. ")")
+            end
+        end
+    end
+    
+    print("\n📌 CHARACTER PARTS:")
+    for i, name in ipairs(parts) do
+        print("  " .. i .. ". " .. name)
+    end
+    
+    print("\n📌 SCRIPTS:")
+    for i, name in ipairs(scripts) do
+        print("  " .. i .. ". " .. name)
+    end
+    
+    print("\n📌 OTHER COMPONENTS:")
+    for i, name in ipairs(others) do
+        print("  " .. i .. ". " .. name)
+    end
+end
+
+-- 4. SCAN SERVICES
+local function scanServices()
+    print("\n========================================")
+    print("🔍 SCANNING SERVICES")
+    print("========================================")
+    
+    local services = {
+        "VirtualUser",
+        "VirtualInputManager",
+        "UserInputService",
+        "RunService",
+        "TweenService",
+        "Debris"
+    }
+    
+    for _, serviceName in ipairs(services) do
+        local success, service = pcall(function()
+            return game:GetService(serviceName)
+        end)
+        
+        if success and service then
+            print("✅ " .. serviceName .. " - Available")
+        else
+            print("❌ " .. serviceName .. " - Not Available")
+        end
+    end
+end
+
+-- 5. LIVE MONITOR (Real-time tracking)
+local function startLiveMonitor()
+    print("\n========================================")
+    print("🔍 LIVE MONITOR (Real-time)")
+    print("========================================")
+    print("Press Ctrl+C to stop\n")
+    
+    local counter = 0
+    local connection = RunService.Heartbeat:Connect(function()
+        counter = counter + 1
+        if counter % 30 == 0 then -- Update setiap 30 frame
+            -- Cek bola terdekat
+            local nearestBall = nil
+            local nearestDist = math.huge
+            
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.Size.Magnitude > 1 then
+                    if obj.Name:lower():find("ball") or obj.Name:lower():find("projectile") then
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local dist = (obj.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < nearestDist then
+                                nearestDist = dist
+                                nearestBall = obj
+                            end
+                        end
+                    end
+                end
+            end
+            
+            if nearestBall then
+                print("🟢 Ball detected: " .. nearestBall.Name .. " (Distance: " .. math.floor(nearestDist) .. ")")
+            else
+                print("🔴 No ball detected")
+            end
+        end
+    end)
+    
+    return connection
+end
+
+-- // ========== GUI EXPLORER ==========
+local function createGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ClawExplorer"
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    screenGui.ResetOnSpawn = false
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 400, 0, 500)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    mainFrame.BackgroundTransparency = 0.1
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    
+    -- Title
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 35)
+    titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(0.7, 0, 1, 0)
+    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "🔍 CLAW EXPLORER"
+    titleText.TextColor3 = Color3.fromRGB(0, 200, 255)
+    titleText.TextScaled = true
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = titleBar
+    
+    -- Close button
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0, 2)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextScaled = true
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Parent = titleBar
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Scroll frame
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, 0, 1, -35)
+    scrollFrame.Position = UDim2.new(0, 0, 0, 35)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.ScrollBarThickness = 5
+    scrollFrame.Parent = mainFrame
+    
+    local uiList = Instance.new("UIListLayout")
+    uiList.Padding = UDim.new(0, 5)
+    uiList.SortOrder = Enum.SortOrder.LayoutOrder
+    uiList.Parent = scrollFrame
+    
+    -- Buttons
+    local function createButton(text, callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -20, 0, 40)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 16
+        btn.Font = Enum.Font.GothamMedium
+        btn.BorderSizePixel = 0
+        btn.Parent = scrollFrame
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+    
+    createButton("🔍 Scan Workspace", function()
+        scanWorkspace()
+    end)
+    
+    createButton("📡 Scan Remote Events", function()
+        scanRemoteEvents()
+    end)
+    
+    createButton("👤 Scan Player", function()
+        scanPlayer()
+    end)
+    
+    createButton("⚙️ Scan Services", function()
+        scanServices()
+    end)
+    
+    createButton("🔄 Start Live Monitor", function()
+        startLiveMonitor()
+    end)
+    
+    createButton("📋 Export All Data", function()
+        print("\n📋 EXPORTING ALL DATA...")
+        scanWorkspace()
+        scanRemoteEvents()
+        scanPlayer()
+        scanServices()
+        print("\n✅ Export complete!")
+    end)
+end
+
+-- // ========== MAIN ==========
+print("========================================")
+print("🔍 CLAW EXPLORER LOADED")
+print("========================================")
+print("📌 Commands:")
+print("  scanWorkspace() - Scan semua objek di Workspace")
+print("  scanRemoteEvents() - Scan RemoteEvent/RemoteFunction")
+print("  scanPlayer() - Scan karakter pemain")
+print("  scanServices() - Scan available services")
+print("  startLiveMonitor() - Real-time tracking")
+print("========================================")
+
+-- Jalankan scan otomatis
+print("\n⏳ Running auto-scan...")
+scanWorkspace()
+scanRemoteEvents()
+scanPlayer()
+scanServices()
+
+-- Buat GUI
+createGUI()
+
+-- Notifikasi
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "🔍 Claw Explorer",
+    Text = "Script loaded! Click buttons to scan.",
+    Duration = 3
+})
+
+print("\n✅ CLAW EXPLORER READY!")
